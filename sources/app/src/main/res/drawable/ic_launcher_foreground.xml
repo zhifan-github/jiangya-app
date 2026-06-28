@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 心形主体 (白色填充，位于画布上半区) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,56 C38,56 18,44 18,32 C18,20 32,14 48,24 L54,32 L60,24 C72,14 84,20 84,32 C84,44 68,56 54,56 Z" />
+
+    <!-- 心电图ECG波形 (白色描边，位于心形下方) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M16,76 L30,76 L35,72 L40,76 L44,76 L48,80 L54,60 L58,84 L62,76 L66,76 L72,72 L80,76 L92,76" />
+</vector>

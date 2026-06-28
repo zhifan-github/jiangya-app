@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">降压吧</string>
+    <style name="Theme.BloodPressureApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#00695C</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

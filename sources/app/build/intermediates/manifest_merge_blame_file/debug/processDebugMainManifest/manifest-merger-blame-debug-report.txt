@@ -1,0 +1,180 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.bloodpressure.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+11-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:4:5-77
+11-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:4:22-74
+12    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+12-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:5:5-79
+12-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+13-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:6:5-74
+13-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:6:22-71
+14    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+14-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:7:5-81
+14-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:7:22-78
+15
+16    <permission
+16-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+17        android:name="com.bloodpressure.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+17-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+18        android:protectionLevel="signature" />
+18-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+19
+20    <uses-permission android:name="com.bloodpressure.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+20-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+20-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+21
+22    <application
+22-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:9:5-41:19
+23        android:name="com.bloodpressure.app.BloodPressureApp"
+23-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:10:9-41
+24        android:allowBackup="true"
+24-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:11:9-35
+25        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+25-->[androidx.core:core:1.13.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\8cbae9f661d3c86287725b2c0707d2fa\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+26        android:debuggable="true"
+27        android:extractNativeLibs="false"
+28        android:icon="@mipmap/ic_launcher"
+28-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:12:9-43
+29        android:label="@string/app_name"
+29-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:13:9-41
+30        android:roundIcon="@mipmap/ic_launcher_round"
+30-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:14:9-54
+31        android:supportsRtl="true"
+31-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:15:9-35
+32        android:theme="@style/Theme.BloodPressureApp" >
+32-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:16:9-54
+33        <activity
+33-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:18:9-27:20
+34            android:name="com.bloodpressure.app.MainActivity"
+34-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:19:13-41
+35            android:configChanges="orientation|screenSize|screenLayout"
+35-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:21:13-72
+36            android:exported="true"
+36-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:20:13-36
+37            android:theme="@style/Theme.BloodPressureApp" >
+37-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:22:13-58
+38            <intent-filter>
+38-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:23:13-26:29
+39                <action android:name="android.intent.action.MAIN" />
+39-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:24:17-69
+39-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:24:25-66
+40
+41                <category android:name="android.intent.category.LAUNCHER" />
+41-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:25:17-77
+41-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:25:27-74
+42            </intent-filter>
+43        </activity>
+44
+45        <receiver
+45-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:29:9-31:40
+46            android:name="com.bloodpressure.app.reminder.ReminderReceiver"
+46-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:30:13-54
+47            android:exported="false" />
+47-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:31:13-37
+48        <receiver
+48-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:33:9-39:20
+49            android:name="com.bloodpressure.app.reminder.BootReceiver"
+49-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:34:13-50
+50            android:exported="false" >
+50-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:35:13-37
+51            <intent-filter>
+51-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:36:13-38:29
+52                <action android:name="android.intent.action.BOOT_COMPLETED" />
+52-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:37:17-79
+52-->C:\Users\zhifan\Documents\降压吧APP\sources\app\src\main\AndroidManifest.xml:37:25-76
+53            </intent-filter>
+54        </receiver>
+55
+56        <activity
+56-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\06c506d1703451d0ea5b9fb4d6bb02c6\transformed\jetified-ui-tooling-release\AndroidManifest.xml:23:9-25:39
+57            android:name="androidx.compose.ui.tooling.PreviewActivity"
+57-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\06c506d1703451d0ea5b9fb4d6bb02c6\transformed\jetified-ui-tooling-release\AndroidManifest.xml:24:13-71
+58            android:exported="true" />
+58-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\06c506d1703451d0ea5b9fb4d6bb02c6\transformed\jetified-ui-tooling-release\AndroidManifest.xml:25:13-36
+59
+60        <provider
+60-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+61            android:name="androidx.startup.InitializationProvider"
+61-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:25:13-67
+62            android:authorities="com.bloodpressure.app.androidx-startup"
+62-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:26:13-68
+63            android:exported="false" >
+63-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:27:13-37
+64            <meta-data
+64-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+65                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+65-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:30:17-75
+66                android:value="androidx.startup" />
+66-->[androidx.emoji2:emoji2:1.3.0] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\092211fce03e89b50d3e792103b75454\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:31:17-49
+67            <meta-data
+67-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\bb790f8b25174a74e4d94ce852e46184\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+68                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+68-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\bb790f8b25174a74e4d94ce852e46184\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+69                android:value="androidx.startup" />
+69-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\bb790f8b25174a74e4d94ce852e46184\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+70            <meta-data
+70-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+71                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+71-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+72                android:value="androidx.startup" />
+72-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+73        </provider>
+74
+75        <service
+75-->[androidx.room:room-runtime:2.6.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\0682164176e2ca25704d3c241d8f105a\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+76            android:name="androidx.room.MultiInstanceInvalidationService"
+76-->[androidx.room:room-runtime:2.6.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\0682164176e2ca25704d3c241d8f105a\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+77            android:directBootAware="true"
+77-->[androidx.room:room-runtime:2.6.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\0682164176e2ca25704d3c241d8f105a\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+78            android:exported="false" />
+78-->[androidx.room:room-runtime:2.6.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\0682164176e2ca25704d3c241d8f105a\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+79
+80        <receiver
+80-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+81            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+82            android:directBootAware="false"
+82-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+83            android:enabled="true"
+83-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+84            android:exported="true"
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+85            android:permission="android.permission.DUMP" >
+85-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+86            <intent-filter>
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+87                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+88            </intent-filter>
+89            <intent-filter>
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+90                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+91            </intent-filter>
+92            <intent-filter>
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+93                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+94            </intent-filter>
+95            <intent-filter>
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+96                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\CodexSandboxOnline\.gradle\caches\8.9\transforms\46cd542e88c96dd76db44cf5523097b0\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+97            </intent-filter>
+98        </receiver>
+99    </application>
+100
+101</manifest>

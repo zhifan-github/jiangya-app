@@ -76,14 +76,14 @@ fun HomeScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 固定近7天，并按真实记录时间排序
+    // 固定近7天，并按用户选择的日期和早晚排序
     val filteredRecords = remember(recentRecords) {
         if (recentRecords.isEmpty()) return@remember emptyList<BloodPressureRecord>()
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
         val fromDate = LocalDate.fromEpochDays(today.toEpochDays() - 7)
-        recentRecords
-            .filter { it.date >= fromDate && it.date <= today }
-            .sortedWith(compareBy<BloodPressureRecord> { it.date }.thenBy { it.time })
+        sortTrendRecords(
+            recentRecords.filter { it.date >= fromDate && it.date <= today }
+        )
     }
 
 
@@ -458,7 +458,7 @@ private fun BpBarChart(
                         cx - 12f,
                         diaBot + 18f,
                         android.graphics.Paint().apply {
-                            color = Color.White.toArgb()
+                            color = VintageText.toArgb()
                             textSize = 18f
                             isFakeBoldText = true
                             isAntiAlias = true
@@ -466,7 +466,7 @@ private fun BpBarChart(
                     )
 
                     val dateLabel = "${r.date.monthNumber}/${r.date.dayOfMonth}"
-                    val timeLabel = "${r.time.hour.toString().padStart(2, '0')}:${r.time.minute.toString().padStart(2, '0')}"
+                    val periodLabel = if (r.period == com.bloodpressure.app.data.MeasurementPeriod.MORNING) "早" else "晚"
                     drawContext.canvas.nativeCanvas.drawText(
                         dateLabel,
                         cx - 13f,
@@ -478,8 +478,8 @@ private fun BpBarChart(
                         }
                     )
                     drawContext.canvas.nativeCanvas.drawText(
-                        timeLabel,
-                        cx - 18f,
+                        periodLabel,
+                        cx - 4f,
                         height - 2f,
                         android.graphics.Paint().apply {
                             color = VintageMuted.copy(alpha = 0.78f).toArgb()

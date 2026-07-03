@@ -22,6 +22,13 @@ fun classifyBp(systolic: Int, diastolic: Int): BpLevel = when {
     else -> BpLevel.HIGH
 }
 
+fun sortTrendRecords(records: List<BloodPressureRecord>): List<BloodPressureRecord> =
+    records.sortedWith(
+        compareBy<BloodPressureRecord> { it.date }
+            .thenBy { it.period.ordinal }
+            .thenBy { it.id }
+    )
+
 fun buildDailyStatuses(records: List<BloodPressureRecord>): List<DailyBpStatus> =
     records.groupBy { it.date }
         .map { (date, dayRecords) ->

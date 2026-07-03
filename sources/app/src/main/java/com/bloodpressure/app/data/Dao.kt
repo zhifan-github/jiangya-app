@@ -29,6 +29,9 @@ interface BloodPressureDao {
     @Query("SELECT * FROM blood_pressure_records ORDER BY date DESC, time DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<BloodPressureRecord>
 
+    @Query("SELECT * FROM blood_pressure_records")
+    suspend fun getAll(): List<BloodPressureRecord>
+
     @Query("UPDATE blood_pressure_records SET systolic = :systolic, diastolic = :diastolic, heartRate = :heartRate, date = :date, period = :period WHERE id = :id")
     suspend fun updateRecord(id: Long, systolic: Int, diastolic: Int, heartRate: Int, date: LocalDate, period: MeasurementPeriod)
 }

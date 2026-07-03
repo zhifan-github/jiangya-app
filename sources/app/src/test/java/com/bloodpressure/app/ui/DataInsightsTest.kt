@@ -71,18 +71,51 @@ class DataInsightsTest {
         assertEquals(2, comparison.elevatedAndHighCount)
     }
 
+    @Test
+    fun sortTrendRecords_usesSelectedDateAndPeriodInsteadOfActualRecordTime() {
+        val previousEveningRecordedAfterMidnight = record(
+            128,
+            82,
+            date = "2026-07-02",
+            time = "00:15",
+            period = MeasurementPeriod.EVENING
+        )
+        val sameDayMorningRecordedLater = record(
+            122,
+            78,
+            date = "2026-07-02",
+            time = "08:30",
+            period = MeasurementPeriod.MORNING
+        )
+        val nextDayMorning = record(
+            120,
+            76,
+            date = "2026-07-03",
+            time = "07:40",
+            period = MeasurementPeriod.MORNING
+        )
+
+        assertEquals(
+            listOf(sameDayMorningRecordedLater, previousEveningRecordedAfterMidnight, nextDayMorning),
+            sortTrendRecords(
+                listOf(previousEveningRecordedAfterMidnight, nextDayMorning, sameDayMorningRecordedLater)
+            )
+        )
+    }
+
     private fun record(
         systolic: Int,
         diastolic: Int,
         date: String = "2026-06-20",
         time: String = "08:00",
-        heartRate: Int = 72
+        heartRate: Int = 72,
+        period: MeasurementPeriod = MeasurementPeriod.MORNING
     ) = BloodPressureRecord(
         systolic = systolic,
         diastolic = diastolic,
         heartRate = heartRate,
         date = LocalDate.parse(date),
         time = LocalTime.parse(time),
-        period = MeasurementPeriod.MORNING
+        period = period
     )
 }

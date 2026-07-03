@@ -293,7 +293,7 @@ fun MainNavigation(
                 allMedRecords = db.medicationRecordDao().getRecent(30)
             }
             currentScreen == "data" -> {
-                dataRecords = db.bloodPressureDao().getRecent(60)
+                dataRecords = db.bloodPressureDao().getAll()
             }
         }
     }

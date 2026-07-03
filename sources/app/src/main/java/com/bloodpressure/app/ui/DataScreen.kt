@@ -123,9 +123,7 @@ fun DataScreen(
     val toDate = if (selectedRange == TimeRange.CUSTOM) customEndDate else today
 
     val filteredRecords = remember(selectedRange, allRecords, customStartDate, customEndDate) {
-        allRecords
-            .filter { it.date in fromDate..toDate }
-            .sortedWith(compareBy<BloodPressureRecord> { it.date }.thenBy { it.time })
+        sortTrendRecords(allRecords.filter { it.date in fromDate..toDate })
     }
     val previousRecords = remember(selectedRange, allRecords, customStartDate, customEndDate) {
         if (selectedRange == TimeRange.ALL) {
@@ -524,8 +522,8 @@ private fun DataBpCandleChart(records: List<BloodPressureRecord>, modifier: Modi
         if (records.isEmpty()) return@Canvas
         val padLeft = 31.dp.toPx()
         val padRight = 9.dp.toPx()
-        val padTop = 8.dp.toPx()
-        val padBottom = 34.dp.toPx()
+        val padTop = 16.dp.toPx()
+        val padBottom = 44.dp.toPx()
         val chartWidth = size.width - padLeft - padRight
         val chartHeight = size.height - padTop - padBottom
         val rawMin = records.minOf { it.diastolic }
@@ -542,6 +540,13 @@ private fun DataBpCandleChart(records: List<BloodPressureRecord>, modifier: Modi
             color = DataMuted.copy(alpha = 0.82f).toArgb()
             textSize = 7.sp.toPx()
             textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        val valuePaint = android.graphics.Paint().apply {
+            color = DataText.toArgb()
+            textSize = 8.sp.toPx()
+            textAlign = android.graphics.Paint.Align.CENTER
+            isFakeBoldText = true
             isAntiAlias = true
         }
 
@@ -583,11 +588,23 @@ private fun DataBpCandleChart(records: List<BloodPressureRecord>, modifier: Modi
                 cap = StrokeCap.Round
             )
 
+            drawContext.canvas.nativeCanvas.drawText(
+                record.systolic.toString(),
+                x,
+                systolicY - 4.dp.toPx(),
+                valuePaint
+            )
+            drawContext.canvas.nativeCanvas.drawText(
+                record.diastolic.toString(),
+                x,
+                diastolicY + 10.dp.toPx(),
+                valuePaint
+            )
             if (index % labelInterval == 0 || index == records.lastIndex) {
                 val dateLabel = String.format(Locale.US, "%02d/%02d", record.date.monthNumber, record.date.dayOfMonth)
-                val timeLabel = String.format(Locale.US, "%02d:%02d", record.time.hour, record.time.minute)
-                drawContext.canvas.nativeCanvas.drawText(dateLabel, x, padTop + chartHeight + 13.dp.toPx(), labelPaint)
-                drawContext.canvas.nativeCanvas.drawText(timeLabel, x, padTop + chartHeight + 24.dp.toPx(), labelPaint)
+                val periodLabel = if (record.period == MeasurementPeriod.MORNING) "早" else "晚"
+                drawContext.canvas.nativeCanvas.drawText(dateLabel, x, padTop + chartHeight + 24.dp.toPx(), labelPaint)
+                drawContext.canvas.nativeCanvas.drawText(periodLabel, x, padTop + chartHeight + 36.dp.toPx(), labelPaint)
             }
         }
     }

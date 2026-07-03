@@ -1,62 +1,95 @@
-﻿package com.bloodpressure.app.ui
+package com.bloodpressure.app.ui
 
-import android.content.pm.ActivityInfo
-import android.view.WindowManager
-import androidx.activity.compose.BackHandler
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.ShowChart
-import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import com.bloodpressure.app.data.BloodPressureRecord
 import com.bloodpressure.app.data.MeasurementPeriod
-import com.bloodpressure.app.ui.theme.*
+import com.bloodpressure.app.ui.theme.TextPrimary
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.minus
+import kotlinx.datetime.toLocalDateTime
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
 
-// 复古配色
-private val VintageBg = Color(0xFFFDFAF3)
-private val VintageGrid = Color(0xFFECE4D5)
-private val VintageText = Color(0xFF5C4033)
-private val VintageMuted = Color(0xFFA09080)
-private val VintageSys = Color(0xFFC75B39)      // 铁锈红 收缩压
-private val VintageDia = Color(0xFF6B8E4E)      // 鼠尾草绿 舒张压
-private val VintageHr = Color(0xFFC4A43E)       // 古铜金 心率
-private val VintageRef130 = Color(0xFFD4886B)   // 130参考线
-private val VintageRef90 = Color(0xFF8FBC8F)    // 90参考线
+private val DataBackground = Color(0xFFFAF8F2)
+private val DataCard = Color(0xFFFFFDF9)
+private val DataBorder = Color(0xFFE8E3D9)
+private val DataText = Color(0xFF263A36)
+private val DataMuted = Color(0xFF727B77)
+private val DataTeal = Color(0xFF006F64)
+private val DataNormal = Color(0xFF7FAE45)
+private val DataElevated = Color(0xFFC4A43E)
+private val DataHigh = Color(0xFFC75146)
+private val DataNeutral = Color(0xFFEFEDE8)
+private val DataMetric = Color(0xFFF3F0E9)
+
+// Retained for the shared fullscreen and heart-rate line chart.
+private val VintageGrid = DataBorder
+private val VintageMuted = DataMuted
+private val VintageSys = DataHigh
+private val VintageDia = DataNormal
+private val VintageHr = Color(0xFFB59432)
+private val VintageRef130 = Color(0xFFD4886B)
+private val VintageRef90 = Color(0xFF8FBC8F)
 
 enum class TimeRange(val label: String, val days: Int) {
     WEEK("近7天", 7),
@@ -75,30 +108,38 @@ fun DataScreen(
 ) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     var selectedRange by remember { mutableStateOf(TimeRange.WEEK) }
-
-    // 自定义时间范围
-    var customStartDate by remember { mutableStateOf(today.minus(kotlinx.datetime.DatePeriod(days = 7))) }
+    var customStartDate by remember { mutableStateOf(today.minus(DatePeriod(days = 6))) }
     var customEndDate by remember { mutableStateOf(today) }
     var showCustomDatePicker by remember { mutableStateOf(false) }
-    var customDatePickerStep by remember { mutableStateOf(0) } // 0: select start, 1: select end
+    var customDatePickerStep by remember { mutableIntStateOf(0) }
 
-    // Calculate date range
-    val fromDate = if (selectedRange.days > 0) {
-        LocalDate.fromEpochDays(today.toEpochDays() - selectedRange.days)
-    } else {
-        // CUSTOM mode
-        customStartDate
+    val fromDate = when (selectedRange) {
+        TimeRange.WEEK -> today.minus(DatePeriod(days = 6))
+        TimeRange.TWO_WEEKS -> today.minus(DatePeriod(days = 13))
+        TimeRange.MONTH -> today.minus(DatePeriod(days = 29))
+        TimeRange.CUSTOM -> customStartDate
+        TimeRange.ALL -> allRecords.minOfOrNull { it.date } ?: today
     }
+    val toDate = if (selectedRange == TimeRange.CUSTOM) customEndDate else today
 
-    val toDate = if (selectedRange.days > 0) {
-        today
-    } else {
-        customEndDate
-    }
-
-    // Filter records by date range
     val filteredRecords = remember(selectedRange, allRecords, customStartDate, customEndDate) {
-        allRecords.filter { it.date >= fromDate && it.date <= toDate }.sortedWith(compareBy({ it.date }, { it.period }))
+        allRecords
+            .filter { it.date in fromDate..toDate }
+            .sortedWith(compareBy<BloodPressureRecord> { it.date }.thenBy { it.time })
+    }
+    val previousRecords = remember(selectedRange, allRecords, customStartDate, customEndDate) {
+        if (selectedRange == TimeRange.ALL) {
+            emptyList()
+        } else {
+            val periodDays = (toDate.toEpochDays() - fromDate.toEpochDays() + 1).coerceAtLeast(1)
+            val previousTo = fromDate.minus(DatePeriod(days = 1))
+            val previousFrom = previousTo.minus(DatePeriod(days = periodDays - 1))
+            allRecords.filter { it.date in previousFrom..previousTo }
+        }
+    }
+    val summary = remember(filteredRecords) { summarizeRecords(filteredRecords) }
+    val comparison = remember(filteredRecords, previousRecords) {
+        comparePeriods(filteredRecords, previousRecords)
     }
 
     Scaffold(contentWindowInsets = WindowInsets(0.dp)) { padding ->
@@ -106,155 +147,87 @@ fun DataScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(AppBackground)
+                .background(DataBackground)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ====== 时间范围选择 ======
+            Text("数据", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = DataText)
+
             TimeRangeSelector(
                 selectedRange = selectedRange,
-                onSelect = {
-                    selectedRange = it
-                    if (it == TimeRange.CUSTOM) {
+                onSelect = { range ->
+                    selectedRange = range
+                    if (range == TimeRange.CUSTOM) {
                         showCustomDatePicker = true
                         customDatePickerStep = 0
                     }
                 }
             )
 
-            // 自定义时间范围显示
             if (selectedRange == TimeRange.CUSTOM) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "自定义范围",
-                        fontSize = 13.sp,
-                        color = TextSecondary
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.clickable {
-                                showCustomDatePicker = true
-                                customDatePickerStep = 0
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            color = SurfaceVariant
-                        ) {
-                            Text(
-                                "${customStartDate}",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontSize = 13.sp,
-                                color = TextPrimary
-                            )
-                        }
-                        Text("至", fontSize = 13.sp, color = TextSecondary)
-                        Surface(
-                            modifier = Modifier.clickable {
-                                showCustomDatePicker = true
-                                customDatePickerStep = 1
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            color = SurfaceVariant
-                        ) {
-                            Text(
-                                "${customEndDate}",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontSize = 13.sp,
-                                color = TextPrimary
-                            )
-                        }
+                CustomRangeRow(
+                    startDate = customStartDate,
+                    endDate = customEndDate,
+                    onStartClick = {
+                        customDatePickerStep = 0
+                        showCustomDatePicker = true
+                    },
+                    onEndClick = {
+                        customDatePickerStep = 1
+                        showCustomDatePicker = true
                     }
-                }
+                )
             }
 
-            // ====== 平均血压卡片 ======
-            AverageCardsSection(records = filteredRecords)
-
-            // ====== 血压趋势图 ======
-            if (filteredRecords.isNotEmpty()) {
-                BpTrendChart(
-                    records = filteredRecords,
-                    onTap = {
-                        onOpenFullscreen("bp", allRecords)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // ====== 心率趋势图 ======
-                HeartRateTrendChart(
-                    records = filteredRecords,
-                    onTap = {
-                        onOpenFullscreen("hr", allRecords)
-                    }
-                )
+            if (summary == null) {
+                EmptyDataCard()
             } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("所选时间范围内无数据", color = TextSecondary, fontSize = 15.sp)
-                    }
-                }
+                SummaryStrip(summary)
+                StatusCalendar(fromDate, toDate, filteredRecords)
+                ComparisonCard(selectedRange, summary, comparison)
+                BloodPressureTrendCard(filteredRecords) { onOpenFullscreen("bp", allRecords) }
+                HeartRateTrendCard(filteredRecords) { onOpenFullscreen("hr", allRecords) }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(78.dp))
         }
     }
 
-    // 自定义日期选择器
     if (showCustomDatePicker) {
         val initialDate = if (customDatePickerStep == 0) customStartDate else customEndDate
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialDate.toEpochDays() * 86400000L
+        val datePickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = initialDate.toEpochDays() * 86_400_000L
         )
-
         DatePickerDialog(
             onDismissRequest = { showCustomDatePicker = false },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        val selectedDate = datePickerState.selectedDateMillis?.let { millis ->
+                            LocalDate.fromEpochDays((millis / 86_400_000L).toInt())
+                        }
                         if (customDatePickerStep == 0) {
-                            // 选择开始日期
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val epochDay = millis / 86400000L
-                                customStartDate = LocalDate.fromEpochDays(epochDay.toInt())
-                            }
+                            selectedDate?.let { customStartDate = it }
                             customDatePickerStep = 1
                         } else {
-                            // 选择结束日期
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val epochDay = millis / 86400000L
-                                customEndDate = LocalDate.fromEpochDays(epochDay.toInt())
-                            }
-                            // 确保起始日期不晚于结束日期
+                            selectedDate?.let { customEndDate = it }
                             if (customStartDate > customEndDate) {
-                                val tmp = customStartDate
+                                val swap = customStartDate
                                 customStartDate = customEndDate
-                                customEndDate = tmp
+                                customEndDate = swap
                             }
                             showCustomDatePicker = false
                         }
                     }
-                ) { Text(if (customDatePickerStep == 0) "下一步" else "确定", color = Primary) }
+                ) {
+                    Text(if (customDatePickerStep == 0) "下一步" else "确定", color = DataTeal)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showCustomDatePicker = false }) { Text("取消") }
+                TextButton(onClick = { showCustomDatePicker = false }) {
+                    Text("取消", color = DataMuted)
+                }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -263,115 +236,392 @@ fun DataScreen(
 }
 
 @Composable
-private fun TimeRangeSelector(
-    selectedRange: TimeRange,
-    onSelect: (TimeRange) -> Unit
-) {
+private fun TimeRangeSelector(selectedRange: TimeRange, onSelect: (TimeRange) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(DataNeutral, RoundedCornerShape(10.dp))
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        TimeRange.values().forEach { range ->
-            Surface(
+        TimeRange.entries.forEach { range ->
+            Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onSelect(range) },
-                shape = RoundedCornerShape(10.dp),
-                color = if (selectedRange == range) Primary else SurfaceWhite,
-                shadowElevation = if (selectedRange == range) 2.dp else 0.dp
-            ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        range.label,
-                        fontWeight = FontWeight.Medium,
-                        color = if (selectedRange == range) Color.White else TextPrimary,
-                        fontSize = 13.sp
+                    .height(44.dp)
+                    .background(
+                        if (selectedRange == range) DataTeal else Color.Transparent,
+                        RoundedCornerShape(8.dp)
                     )
-                }
+                    .clickable { onSelect(range) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    range.label,
+                    color = if (selectedRange == range) Color.White else DataMuted,
+                    fontSize = 11.sp,
+                    fontWeight = if (selectedRange == range) FontWeight.Bold else FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AverageCardsSection(records: List<BloodPressureRecord>) {
-    val avgSystolic = if (records.isNotEmpty()) records.map { it.systolic }.average().toInt() else 0
-    val avgDiastolic = if (records.isNotEmpty()) records.map { it.diastolic }.average().toInt() else 0
-    val avgHeartRate = if (records.isNotEmpty()) records.map { it.heartRate }.average().toInt() else 0
-
+private fun CustomRangeRow(
+    startDate: LocalDate,
+    endDate: LocalDate,
+    onStartClick: () -> Unit,
+    onEndClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "平均收缩压",
-            value = if (avgSystolic > 0) "$avgSystolic" else "--",
-            unit = "mmHg",
-            color = Primary
-        )
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "平均舒张压",
-            value = if (avgDiastolic > 0) "$avgDiastolic" else "--",
-            unit = "mmHg",
-            color = Accent
-        )
-        StatCard(
-            modifier = Modifier.weight(1f),
-            title = "平均心率",
-            value = if (avgHeartRate > 0) "$avgHeartRate" else "--",
-            unit = "bpm",
-            color = Color(0xFFE57373)
-        )
+        DateButton(startDate.toString(), Modifier.weight(1f), onStartClick)
+        Text("至", color = DataMuted, fontSize = 12.sp)
+        DateButton(endDate.toString(), Modifier.weight(1f), onEndClick)
     }
 }
 
 @Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    value: String,
-    unit: String,
-    color: Color
-) {
+private fun DateButton(text: String, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.height(44.dp).clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = DataCard,
+        border = BorderStroke(1.dp, DataBorder)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text, color = DataText, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun SummaryStrip(summary: BpSummary) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = VintageBg),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = DataCard),
+        border = BorderStroke(1.dp, DataBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                title,
-                fontSize = 11.sp,
-                color = TextSecondary
+        Row(modifier = Modifier.fillMaxWidth().height(78.dp)) {
+            SummaryCell(
+                Modifier.weight(1.08f),
+                "正常记录占比",
+                summary.normalPercent.toString() + "%",
+                DataTeal,
+                Color.White
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center
-            ) {
+            SummaryCell(
+                Modifier.weight(1f),
+                "平均血压",
+                summary.averageSystolic.toString() + "/" + summary.averageDiastolic,
+                DataCard,
+                DataText
+            )
+            SummaryCell(
+                Modifier.weight(0.86f),
+                "平均心率",
+                summary.averageHeartRate.toString(),
+                DataCard,
+                DataText,
+                "bpm"
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryCell(
+    modifier: Modifier,
+    label: String,
+    value: String,
+    background: Color,
+    contentColor: Color,
+    unit: String? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(background)
+            .padding(horizontal = 10.dp, vertical = 11.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, fontSize = 10.sp, color = contentColor.copy(alpha = 0.72f))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = contentColor)
+            unit?.let {
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(it, fontSize = 8.sp, color = contentColor.copy(alpha = 0.68f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusCalendar(fromDate: LocalDate, toDate: LocalDate, records: List<BloodPressureRecord>) {
+    val statusByDate = remember(records) { buildDailyStatuses(records).associateBy { it.date } }
+    val dates = remember(fromDate, toDate) {
+        (fromDate.toEpochDays()..toDate.toEpochDays()).map { LocalDate.fromEpochDays(it) }
+    }
+    val weeks = remember(dates) { dates.chunked(7) }
+
+    DataCardContainer {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("血压状态日历", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DataText)
+            Text(
+                statusByDate.values.count { it.level == BpLevel.NORMAL }.toString() + " 天正常",
+                fontSize = 11.sp,
+                color = DataMuted
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val weekWidth = maxWidth
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(weeks) { _, week ->
+                    Row(
+                        modifier = Modifier.width(weekWidth),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        week.forEach { date ->
+                            StatusDay(date, statusByDate[date], Modifier.weight(1f))
+                        }
+                        repeat(7 - week.size) { Spacer(modifier = Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+        if (weeks.size > 1) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("左右滑动查看其他日期", fontSize = 10.sp, color = DataMuted)
+        }
+    }
+}
+
+@Composable
+private fun StatusDay(date: LocalDate, status: DailyBpStatus?, modifier: Modifier) {
+    val levelColor = status?.level?.toColor()
+    val weekLabels = listOf("一", "二", "三", "四", "五", "六", "日")
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(weekLabels[date.dayOfWeek.ordinal], fontSize = 9.sp, color = DataMuted)
+        Spacer(modifier = Modifier.height(5.dp))
+        Surface(
+            modifier = Modifier.size(38.dp),
+            shape = RoundedCornerShape(9.dp),
+            color = levelColor?.copy(alpha = 0.20f) ?: DataNeutral
+        ) {
+            Box(contentAlignment = Alignment.Center) {
                 Text(
-                    value,
-                    fontSize = 28.sp,
+                    date.monthNumber.toString() + "/" + date.dayOfMonth,
+                    fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
-                    color = color
+                    color = levelColor ?: DataMuted.copy(alpha = 0.65f)
                 )
-                if (value != "--") {
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        unit,
-                        fontSize = 11.sp,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 3.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ComparisonCard(selectedRange: TimeRange, summary: BpSummary, comparison: PeriodComparison?) {
+    DataCardContainer {
+        Text(
+            if (selectedRange == TimeRange.ALL) "记录状态分布" else "与上一周期相比",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = DataText
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        if (selectedRange == TimeRange.ALL) {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                MetricBlock("正常", summary.normalCount.toString(), DataNormal, Modifier.weight(1f))
+                MetricBlock("偏高", summary.elevatedCount.toString(), DataElevated, Modifier.weight(1f))
+                MetricBlock("高", summary.highCount.toString(), DataHigh, Modifier.weight(1f))
+            }
+        } else if (comparison == null) {
+            Box(modifier = Modifier.fillMaxWidth().height(52.dp), contentAlignment = Alignment.CenterStart) {
+                Text("暂无对比数据", fontSize = 13.sp, color = DataMuted)
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                MetricBlock(
+                    "收缩压均值",
+                    comparison.systolicChange.toChangeLabel(),
+                    comparison.systolicChange.toChangeColor(),
+                    Modifier.weight(1f)
+                )
+                MetricBlock(
+                    "舒张压均值",
+                    comparison.diastolicChange.toChangeLabel(),
+                    comparison.diastolicChange.toChangeColor(),
+                    Modifier.weight(1f)
+                )
+                MetricBlock(
+                    "偏高/高记录",
+                    comparison.elevatedAndHighCount.toString(),
+                    if (comparison.elevatedAndHighCount == 0) DataNormal else DataHigh,
+                    Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricBlock(label: String, value: String, color: Color, modifier: Modifier) {
+    Column(
+        modifier = modifier
+            .background(DataMetric, RoundedCornerShape(7.dp))
+            .padding(horizontal = 9.dp, vertical = 9.dp)
+    ) {
+        Text(label, fontSize = 9.sp, color = DataMuted, maxLines = 1)
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(value, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+@Composable
+private fun BloodPressureTrendCard(records: List<BloodPressureRecord>, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DataCard),
+        border = BorderStroke(1.dp, DataBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(13.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("血压趋势", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DataText)
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    DataLegendItem(DataNormal, "正常")
+                    DataLegendItem(DataElevated, "偏高")
+                    DataLegendItem(DataHigh, "高")
+                }
+            }
+            Spacer(modifier = Modifier.height(9.dp))
+            DataBpCandleChart(records, Modifier.fillMaxWidth().height(210.dp))
+        }
+    }
+}
+
+@Composable
+private fun DataBpCandleChart(records: List<BloodPressureRecord>, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        if (records.isEmpty()) return@Canvas
+        val padLeft = 31.dp.toPx()
+        val padRight = 9.dp.toPx()
+        val padTop = 8.dp.toPx()
+        val padBottom = 34.dp.toPx()
+        val chartWidth = size.width - padLeft - padRight
+        val chartHeight = size.height - padTop - padBottom
+        val rawMin = records.minOf { it.diastolic }
+        val rawMax = records.maxOf { it.systolic }
+        val minValue = min(60f, floor(rawMin / 20f) * 20f)
+        val maxValue = max(160f, ceil(rawMax / 20f) * 20f)
+        val valueRange = (maxValue - minValue).coerceAtLeast(1f)
+        val axisPaint = android.graphics.Paint().apply {
+            color = DataMuted.copy(alpha = 0.75f).toArgb()
+            textSize = 8.sp.toPx()
+            isAntiAlias = true
+        }
+        val labelPaint = android.graphics.Paint().apply {
+            color = DataMuted.copy(alpha = 0.82f).toArgb()
+            textSize = 7.sp.toPx()
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+
+        repeat(5) { index ->
+            val value = minValue + valueRange * index / 4f
+            val y = padTop + chartHeight * (maxValue - value) / valueRange
+            drawLine(DataBorder, Offset(padLeft, y), Offset(size.width - padRight, y), 1f)
+            drawContext.canvas.nativeCanvas.drawText(value.toInt().toString(), 1f, y + 3.dp.toPx(), axisPaint)
+        }
+
+        listOf(140f to DataHigh, 120f to DataTeal, 90f to DataElevated, 80f to DataNormal)
+            .forEach { (value, color) ->
+                if (value in minValue..maxValue) {
+                    val y = padTop + chartHeight * (maxValue - value) / valueRange
+                    drawLine(
+                        color.copy(alpha = 0.36f),
+                        Offset(padLeft, y),
+                        Offset(size.width - padRight, y),
+                        1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
                     )
+                }
+            }
+
+        val stepX = chartWidth / records.size
+        val candleWidth = min(7.dp.toPx(), stepX * 0.30f).coerceAtLeast(2.dp.toPx())
+        val labelInterval = max(1, ceil(records.size / 6f).toInt())
+        records.forEachIndexed { index, record ->
+            val x = padLeft + stepX * (index + 0.5f)
+            val systolicY = padTop + chartHeight * (maxValue - record.systolic) / valueRange
+            val diastolicY = padTop + chartHeight * (maxValue - record.diastolic) / valueRange
+            val color = classifyBp(record.systolic, record.diastolic).toColor()
+            drawLine(color, Offset(x, systolicY), Offset(x, diastolicY), candleWidth, cap = StrokeCap.Round)
+            drawLine(
+                Color.White.copy(alpha = 0.40f),
+                Offset(x - candleWidth * 0.18f, systolicY + candleWidth * 0.45f),
+                Offset(x - candleWidth * 0.18f, diastolicY - candleWidth * 0.45f),
+                max(1f, candleWidth * 0.18f),
+                cap = StrokeCap.Round
+            )
+
+            if (index % labelInterval == 0 || index == records.lastIndex) {
+                val dateLabel = String.format(Locale.US, "%02d/%02d", record.date.monthNumber, record.date.dayOfMonth)
+                val timeLabel = String.format(Locale.US, "%02d:%02d", record.time.hour, record.time.minute)
+                drawContext.canvas.nativeCanvas.drawText(dateLabel, x, padTop + chartHeight + 13.dp.toPx(), labelPaint)
+                drawContext.canvas.nativeCanvas.drawText(timeLabel, x, padTop + chartHeight + 24.dp.toPx(), labelPaint)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeartRateTrendCard(records: List<BloodPressureRecord>, onClick: () -> Unit) {
+    val averageHeartRate = summarizeRecords(records)?.averageHeartRate
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DataCard),
+        border = BorderStroke(1.dp, DataBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(13.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("心率趋势", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = DataText)
+                Text(
+                    averageHeartRate?.let { "平均 " + it + " bpm" } ?: "--",
+                    fontSize = 11.sp,
+                    color = DataMuted
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            if (records.size >= 2) {
+                LineChart(records, true, modifier = Modifier.fillMaxWidth().height(154.dp))
+            } else {
+                Box(modifier = Modifier.fillMaxWidth().height(76.dp), contentAlignment = Alignment.Center) {
+                    Text("至少需要 2 条记录显示趋势", fontSize = 12.sp, color = DataMuted)
                 }
             }
         }
@@ -379,100 +629,63 @@ private fun StatCard(
 }
 
 @Composable
-private fun BpTrendChart(
-    records: List<BloodPressureRecord>,
-    onTap: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onTap() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = VintageBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.FavoriteBorder,
-                    contentDescription = null,
-                    tint = VintageSys,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    "血压趋势",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    color = VintageText
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    "点击放大",
-                    fontSize = 12.sp,
-                    color = VintageMuted
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Chart
-            LineChart(
-                records = records,
-                showHr = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            )
+private fun DataLegendItem(color: Color, label: String) {
+    Surface(shape = RoundedCornerShape(8.dp), color = color.copy(alpha = 0.13f)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(6.dp).background(color, CircleShape))
+            Spacer(modifier = Modifier.width(3.dp))
+            Text(label, fontSize = 9.sp, color = DataText)
         }
     }
 }
 
 @Composable
-private fun HeartRateTrendChart(
-    records: List<BloodPressureRecord>,
-    onTap: () -> Unit
-) {
+private fun DataCardContainer(content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onTap() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = VintageBg),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DataCard),
+        border = BorderStroke(1.dp, DataBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Timeline,
-                    contentDescription = null,
-                    tint = VintageHr,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    "心率趋势",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
-                    color = VintageText
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    "点击放大",
-                    fontSize = 12.sp,
-                    color = VintageMuted
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+        Column(modifier = Modifier.padding(13.dp), content = content)
+    }
+}
 
-            LineChart(
-                records = records,
-                showHr = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            )
+@Composable
+private fun EmptyDataCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DataCard),
+        border = BorderStroke(1.dp, DataBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+            Text("所选时间范围内无数据", fontSize = 14.sp, color = DataMuted)
         }
     }
+}
+
+private fun BpLevel.toColor(): Color = when (this) {
+    BpLevel.NORMAL -> DataNormal
+    BpLevel.ELEVATED -> DataElevated
+    BpLevel.HIGH -> DataHigh
+}
+
+private fun Int.toChangeLabel(): String = when {
+    this < 0 -> "↓ " + abs(this)
+    this > 0 -> "↑ " + this
+    else -> "持平"
+}
+
+private fun Int.toChangeColor(): Color = when {
+    this < 0 -> DataTeal
+    this > 0 -> DataHigh
+    else -> DataMuted
 }
 
 @Composable

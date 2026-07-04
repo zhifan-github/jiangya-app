@@ -11,14 +11,83 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.bloodpressure.app.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 enum class TrainingPhase { GRIP, REST, FINISHED }
+
+data class TrainingTimerState(
+    val phase: TrainingPhase,
+    val currentGroup: Int,
+    val secondsLeft: Int,
+    val totalElapsed: Int,
+    val completedGroups: Int,
+    val isPaused: Boolean
+)
+
+fun newTrainingTimerState(groupDuration: Int) = TrainingTimerState(
+    phase = TrainingPhase.GRIP,
+    currentGroup = 1,
+    secondsLeft = groupDuration,
+    totalElapsed = 0,
+    completedGroups = 0,
+    isPaused = false
+)
+
+fun pauseTrainingTimer(state: TrainingTimerState): TrainingTimerState =
+    if (state.phase == TrainingPhase.FINISHED) state else state.copy(isPaused = true)
+
+fun tickTrainingTimer(
+    state: TrainingTimerState,
+    groupCount: Int,
+    groupDuration: Int,
+    restDuration: Int
+): TrainingTimerState {
+    if (state.isPaused || state.phase == TrainingPhase.FINISHED) return state
+    if (state.secondsLeft > 1) {
+        return state.copy(
+            secondsLeft = state.secondsLeft - 1,
+            totalElapsed = state.totalElapsed + 1
+        )
+    }
+
+    val elapsed = state.totalElapsed + if (state.secondsLeft == 1) 1 else 0
+    return when (state.phase) {
+        TrainingPhase.GRIP -> {
+            if (state.currentGroup >= groupCount) {
+                state.copy(
+                    phase = TrainingPhase.FINISHED,
+                    secondsLeft = 0,
+                    totalElapsed = elapsed,
+                    completedGroups = state.currentGroup
+                )
+            } else {
+                state.copy(
+                    phase = TrainingPhase.REST,
+                    secondsLeft = restDuration,
+                    totalElapsed = elapsed,
+                    completedGroups = state.currentGroup
+                )
+            }
+        }
+        TrainingPhase.REST -> state.copy(
+            phase = TrainingPhase.GRIP,
+            currentGroup = state.currentGroup + 1,
+            secondsLeft = groupDuration,
+            totalElapsed = elapsed
+        )
+        TrainingPhase.FINISHED -> state
+    }
+}
 
 @Composable
 fun TrainingScreen(
@@ -29,57 +98,57 @@ fun TrainingScreen(
     onExit: () -> Unit,
     onEndTraining: (completedGroups: Int, totalSeconds: Int) -> Unit = { _, _ -> }
 ) {
-    var phase by remember { mutableStateOf(TrainingPhase.GRIP) }
-    var currentGroup by remember { mutableStateOf(1) }
-    var secondsLeft by remember { mutableStateOf(groupDuration) }
-    var totalElapsed by remember { mutableStateOf(0) }
-    var isPaused by remember { mutableStateOf(false) }
-    var completedGroups by remember { mutableStateOf(0) }
+    var timerState by remember(groupCount, groupDuration, restDuration) {
+        mutableStateOf(newTrainingTimerState(groupDuration))
+    }
+    val phase = timerState.phase
+    val currentGroup = timerState.currentGroup
+    val secondsLeft = timerState.secondsLeft
+    val totalElapsed = timerState.totalElapsed
+    val isPaused = timerState.isPaused
+    val completedGroups = timerState.completedGroups
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val view = LocalView.current
+    val currentOnFinish by rememberUpdatedState(onFinish)
+    var showSkipConfirmation by remember { mutableStateOf(false) }
 
-    // Countdown timer — single coroutine avoids LaunchedEffect restart race conditions
-    LaunchedEffect(Unit) {
-        // 初始设置
-        val initialDuration = when (phase) {
-            TrainingPhase.GRIP -> groupDuration
-            TrainingPhase.REST -> restDuration
-            else -> 0
-        }
-        secondsLeft = initialDuration
+    DisposableEffect(view) {
+        val wasKeepingScreenOn = view.keepScreenOn
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = wasKeepingScreenOn }
+    }
 
-        while (true) {
-            if (isPaused) { delay(200L); continue }
-            if (phase == TrainingPhase.FINISHED) break
-
-            while (secondsLeft > 0) {
-                delay(1000L)
-                if (isPaused) break
-                secondsLeft--
-                totalElapsed++
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                timerState = pauseTrainingTimer(timerState)
             }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-            if (isPaused) continue
-
-            when (phase) {
-                TrainingPhase.GRIP -> {
-                    completedGroups = currentGroup
-                    if (currentGroup >= groupCount) {
-                        phase = TrainingPhase.FINISHED
-                        onFinish(completedGroups, totalElapsed)
-                    } else {
-                        phase = TrainingPhase.REST
-                        secondsLeft = restDuration
-                    }
+    LaunchedEffect(groupCount, groupDuration, restDuration) {
+        while (isActive) {
+            delay(1000L)
+            val previousState = timerState
+            val nextState = tickTrainingTimer(
+                state = previousState,
+                groupCount = groupCount,
+                groupDuration = groupDuration,
+                restDuration = restDuration
+            )
+            if (nextState != previousState) {
+                timerState = nextState
+                if (
+                    previousState.phase != TrainingPhase.FINISHED &&
+                    nextState.phase == TrainingPhase.FINISHED
+                ) {
+                    currentOnFinish(nextState.completedGroups, nextState.totalElapsed)
                 }
-                TrainingPhase.REST -> {
-                    currentGroup++
-                    phase = TrainingPhase.GRIP
-                    secondsLeft = groupDuration
-                }
-                TrainingPhase.FINISHED -> {}
             }
         }
     }
-
     // Format seconds to MM:SS
     val minutes = secondsLeft / 60
     val seconds = secondsLeft % 60
@@ -242,7 +311,7 @@ fun TrainingScreen(
                 ) {
                     // Pause/Resume
                     Button(
-                        onClick = { isPaused = !isPaused },
+                        onClick = { timerState = timerState.copy(isPaused = !timerState.isPaused) },
                         modifier = Modifier
                             .weight(1f)
                             .height(50.dp),
@@ -258,11 +327,9 @@ fun TrainingScreen(
                         )
                     }
 
-                    // Skip group
+                    // End the current phase early
                     Button(
-                        onClick = {
-                            secondsLeft = 0
-                        },
+                        onClick = { showSkipConfirmation = true },
                         modifier = Modifier
                             .weight(1f)
                             .height(50.dp),
@@ -272,7 +339,7 @@ fun TrainingScreen(
                             contentColor = Color.White.copy(alpha = 0.5f)
                         )
                     ) {
-                        Text("跳过", fontSize = 15.sp)
+                        Text("提前结束", fontSize = 15.sp)
                     }
                 }
 
@@ -313,5 +380,28 @@ fun TrainingScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    if (showSkipConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showSkipConfirmation = false },
+            title = { Text("提前结束当前阶段？") },
+            text = { Text("确认后将立即进入下一阶段。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSkipConfirmation = false
+                        timerState = timerState.copy(secondsLeft = 0)
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSkipConfirmation = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }

@@ -1,0 +1,18 @@
+{
+  "synthetic_validation_accuracy": 0.9996,
+  "per_digit_accuracy": {
+    "0": 1.0,
+    "1": 1.0,
+    "2": 1.0,
+    "3": 0.996,
+    "4": 1.0,
+    "5": 1.0,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0
+  },
+  "model_bytes": 635948,
+  "epochs": 5,
+  "warning": "Synthetic validation is not the 1000-session device acceptance test."
+}

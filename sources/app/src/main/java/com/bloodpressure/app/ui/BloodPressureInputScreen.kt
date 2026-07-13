@@ -11,22 +11,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bloodpressure.app.data.MeasurementPeriod
+import com.bloodpressure.app.recognition.BloodPressurePhotoRecognizer
+import com.bloodpressure.app.recognition.RomSunDigitClassifier
 import com.bloodpressure.app.ui.theme.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,12 +50,63 @@ fun BloodPressureInputScreen(
         mutableStateOf(if (now.time.hour < 12) MeasurementPeriod.MORNING else MeasurementPeriod.EVENING)
     }
     var medicationTaken by remember { mutableStateOf(false) }
+    var isRecognizing by remember { mutableStateOf(false) }
+    var recognitionMessage by remember { mutableStateOf<String?>(null) }
+    var showCamera by remember { mutableStateOf(false) }
+    val recognitionScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val digitClassifier = remember {
+        runCatching { RomSunDigitClassifier(context.applicationContext) }.getOrNull()
+    }
+    DisposableEffect(digitClassifier) {
+        onDispose { digitClassifier?.close() }
+    }
 
     var selectedDate by remember { mutableStateOf(now.date) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = System.currentTimeMillis()
     )
+
+    if (showCamera) {
+        BloodPressureCameraScreen(
+            onCaptured = { frames ->
+                showCamera = false
+                isRecognizing = true
+                recognitionScope.launch {
+                    try {
+                        val (visibleFrameCount, result) = withContext(Dispatchers.Default) {
+                            val visibleFrames = frames.filter(BloodPressurePhotoRecognizer::hasVisibleDisplay)
+                            val recognized = digitClassifier?.let { classifier ->
+                                val readings = visibleFrames.map { frame ->
+                                    BloodPressurePhotoRecognizer.recognizeScreen(frame, classifier)
+                                }
+                                BloodPressurePhotoRecognizer.consensus(readings)
+                            }
+                            visibleFrames.size to recognized
+                        }
+                        if (result != null) {
+                            systolic = result.systolic.toString()
+                            diastolic = result.diastolic.toString()
+                            heartRate = result.heartRate.toString()
+                            recognitionMessage = "已识别读数，请核对后保存"
+                        } else if (visibleFrameCount < 5) {
+                            recognitionMessage = "未检测到发光数字，请先让血压计停留在读数画面再拍摄"
+                        } else {
+                            recognitionMessage = "暂未识别到完整读数，请让发光屏幕贴合取景框重试"
+                        }
+                    } catch (_: Throwable) {
+                        recognitionMessage = "识别处理失败，请重新拍摄或手动输入"
+                    } finally {
+                        frames.forEach { if (!it.isRecycled) it.recycle() }
+                        isRecognizing = false
+                    }
+                }
+            },
+            onBack = { showCamera = false }
+        )
+        return
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -200,6 +258,49 @@ fun BloodPressureInputScreen(
                         Text("血压数据", fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     }
 
+                    OutlinedButton(
+                        onClick = {
+                            recognitionMessage = null
+                            showCamera = true
+                        },
+                        enabled = !isRecognizing,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary)
+                    ) {
+                        if (isRecognizing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Primary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("正在识别…")
+                        } else {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("拍照识别血压计")
+                        }
+                    }
+
+                    Text(
+                        "请正对血压计，让发光显示屏边缘贴合取景框",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+
+                    recognitionMessage?.let { message ->
+                        Text(
+                            message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (message.startsWith("已识别")) Primary else DangerRed,
+                            fontSize = 12.sp
+                        )
+                    }
+
                     // 收缩压
                     OutlinedTextField(
                         value = systolic,
@@ -267,7 +368,8 @@ fun BloodPressureInputScreen(
                     if (systolic.isNotEmpty() && diastolic.isNotEmpty() && heartRate.isNotEmpty()) {
                         val isValid = systolic.toIntOrNull()?.let { it in 60..250 } == true &&
                                 diastolic.toIntOrNull()?.let { it in 40..150 } == true &&
-                                heartRate.toIntOrNull()?.let { it in 30..200 } == true
+                                heartRate.toIntOrNull()?.let { it in 30..200 } == true &&
+                                (systolic.toIntOrNull() ?: 0) > (diastolic.toIntOrNull() ?: Int.MAX_VALUE)
                         if (!isValid) {
                             Text(
                                 "请输入合理范围：收缩压60-250，舒张压40-150，心率30-200",
@@ -283,7 +385,8 @@ fun BloodPressureInputScreen(
             // ====== 保存按钮 ======
             val isValid = systolic.toIntOrNull()?.let { it in 60..250 } == true &&
                     diastolic.toIntOrNull()?.let { it in 40..150 } == true &&
-                    heartRate.toIntOrNull()?.let { it in 30..200 } == true
+                    heartRate.toIntOrNull()?.let { it in 30..200 } == true &&
+                    (systolic.toIntOrNull() ?: 0) > (diastolic.toIntOrNull() ?: Int.MAX_VALUE)
 
             Button(
                 onClick = {

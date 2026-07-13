@@ -85,6 +85,11 @@ dependencies {
     // ViewModel Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+    implementation("com.google.ai.edge.litert:litert:1.4.2")
+
     // Date/Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 

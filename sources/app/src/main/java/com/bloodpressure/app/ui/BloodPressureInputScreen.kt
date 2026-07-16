@@ -39,7 +39,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun BloodPressureInputScreen(
     onSave: (systolic: Int, diastolic: Int, heartRate: Int, date: LocalDate, period: MeasurementPeriod, medicationTaken: Boolean) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    startWithCamera: Boolean = false
 ) {
     val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
@@ -52,7 +53,7 @@ fun BloodPressureInputScreen(
     var medicationTaken by remember { mutableStateOf(false) }
     var isRecognizing by remember { mutableStateOf(false) }
     var recognitionMessage by remember { mutableStateOf<String?>(null) }
-    var showCamera by remember { mutableStateOf(false) }
+    var showCamera by remember(startWithCamera) { mutableStateOf(startWithCamera) }
     val recognitionScope = rememberCoroutineScope()
     val context = LocalContext.current
     val digitClassifier = remember {
@@ -103,7 +104,9 @@ fun BloodPressureInputScreen(
                     }
                 }
             },
-            onBack = { showCamera = false }
+            onBack = {
+                if (startWithCamera) onBack() else showCamera = false
+            }
         )
         return
     }
@@ -258,39 +261,41 @@ fun BloodPressureInputScreen(
                         Text("血压数据", fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            recognitionMessage = null
-                            showCamera = true
-                        },
-                        enabled = !isRecognizing,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary)
-                    ) {
-                        if (isRecognizing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = Primary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("正在识别…")
-                        } else {
-                            Icon(Icons.Default.PhotoCamera, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("拍照识别血压计")
+                    if (startWithCamera) {
+                        OutlinedButton(
+                            onClick = {
+                                recognitionMessage = null
+                                showCamera = true
+                            },
+                            enabled = !isRecognizing,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary)
+                        ) {
+                            if (isRecognizing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Primary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("正在识别…")
+                            } else {
+                                Icon(Icons.Default.PhotoCamera, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("重新拍照识别")
+                            }
                         }
-                    }
 
-                    Text(
-                        "请正对血压计，让发光显示屏边缘贴合取景框",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
-                        fontSize = 12.sp
-                    )
+                        Text(
+                            "请正对血压计，让发光显示屏边缘贴合取景框",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
 
                     recognitionMessage?.let { message ->
                         Text(

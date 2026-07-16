@@ -117,13 +117,13 @@ fun HistoryScreen(
                 when (page) {
                     0 -> BloodPressureHistoryTab(
                         records = bpRecords,
-                        onLongPress = { record -> pendingDeleteBp = record },
+                        onEdit = { record -> editingBpRecord = record },
                         onDelete = { record -> pendingDeleteBp = record }
                     )
                     1 -> MedicationHistoryTab(
                         records = medRecords.filter { it.taken },
                         medications = medications,
-                        onLongPress = { record -> pendingDeleteMed = record },
+                        onEdit = { record -> editingMedRecord = record },
                         onDelete = { record -> pendingDeleteMed = record }
                     )
                 }
@@ -198,7 +198,7 @@ fun HistoryScreen(
 @Composable
 private fun BloodPressureHistoryTab(
     records: List<BloodPressureRecord>,
-    onLongPress: (BloodPressureRecord) -> Unit,
+    onEdit: (BloodPressureRecord) -> Unit,
     onDelete: (BloodPressureRecord) -> Unit
 ) {
     if (records.isEmpty()) {
@@ -230,7 +230,7 @@ private fun BloodPressureHistoryTab(
             items(records, key = { it.id }) { record ->
                 BpRecordCard(
                     record = record,
-                    onLongPress = { onLongPress(record) },
+                    onEdit = { onEdit(record) },
                     onDelete = { onDelete(record) }
                 )
             }
@@ -242,15 +242,15 @@ private fun BloodPressureHistoryTab(
 @Composable
 private fun BpRecordCard(
     record: BloodPressureRecord,
-    onLongPress: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = {},
-                onLongClick = { onLongPress() }
+                onClick = onEdit,
+                onLongClick = onDelete
             ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
@@ -303,7 +303,7 @@ private fun BpRecordCard(
 private fun MedicationHistoryTab(
     records: List<MedicationRecord>,
     medications: List<Medication>,
-    onLongPress: (MedicationRecord) -> Unit,
+    onEdit: (MedicationRecord) -> Unit,
     onDelete: (MedicationRecord) -> Unit
 ) {
     if (records.isEmpty()) {
@@ -336,7 +336,7 @@ private fun MedicationHistoryTab(
                 MedRecordCard(
                     record = record,
                     medication = medications.find { it.id == record.medicationId },
-                    onLongPress = { onLongPress(record) },
+                    onEdit = { onEdit(record) },
                     onDelete = { onDelete(record) }
                 )
             }
@@ -349,15 +349,15 @@ private fun MedicationHistoryTab(
 private fun MedRecordCard(
     record: MedicationRecord,
     medication: Medication?,
-    onLongPress: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = {},
-                onLongClick = { onLongPress() }
+                onClick = onEdit,
+                onLongClick = onDelete
             ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),

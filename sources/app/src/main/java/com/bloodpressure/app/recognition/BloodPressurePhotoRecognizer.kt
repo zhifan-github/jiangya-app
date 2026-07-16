@@ -16,6 +16,7 @@ data class BloodPressureRecognitionResult(
 object BloodPressurePhotoRecognizer {
     private const val NORMALIZED_WIDTH = 600
     private const val NORMALIZED_HEIGHT = 770
+    private val FIXED_ROW_ZONES = listOf(90..340, 325..535, 510..665)
 
     fun hasVisibleDisplay(screen: Bitmap): Boolean {
         val normalized = Bitmap.createScaledBitmap(screen, NORMALIZED_WIDTH, NORMALIZED_HEIGHT, true)
@@ -31,22 +32,63 @@ object BloodPressurePhotoRecognizer {
         normalized.getPixels(pixels, 0, NORMALIZED_WIDTH, 0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT)
         if (normalized !== screen) normalized.recycle()
 
-        val rawMask = BooleanArray(pixels.size)
-        var litPixels = 0
+        val blueMask = BooleanArray(pixels.size)
+        val whiteMask = BooleanArray(pixels.size)
+        var bluePixels = 0
+        var whitePixels = 0
+        var pureWhitePixels = 0
         pixels.forEachIndexed { index, pixel ->
-            val lit = isBlueDisplayPixel(pixel)
-            rawMask[index] = lit
-            if (lit) litPixels++
+            val blue = isBlueDisplayPixel(pixel)
+            val white = isNearWhiteDisplayPixel(pixel)
+            blueMask[index] = blue
+            whiteMask[index] = white
+            if (blue) bluePixels++
+            if (white) whitePixels++
+            if (Color.red(pixel) > 247 && Color.green(pixel) > 247 && Color.blue(pixel) > 247) {
+                pureWhitePixels++
+            }
         }
+        recognizeFixedZones(blueMask, whiteMask, classifier)?.let { return it }
+        val useWhiteMask = pureWhitePixels >= 12_000 && whitePixels in 2_000..180_000
+        val rawMask = if (useWhiteMask) whiteMask else blueMask
+        val litPixels = if (useWhiteMask) whitePixels else bluePixels
         if (litPixels !in 2_000..180_000) return null
         if (!passesQualityGate(pixels)) return null
         val mask = deskew(rawMask)
-        val readingRows = detectReadingRows(mask) ?: return null
+        val readingRows = detectReadingRows(mask, if (useWhiteMask) 20 else 40) ?: return null
 
-        val systolic = recognizeRow(mask, readingRows[0], classifier) ?: return null
-        val diastolic = recognizeRow(mask, readingRows[1], classifier) ?: return null
-        val heartRate = recognizeRow(mask, readingRows[2], classifier) ?: return null
+        val systolic = recognizeRow(mask, readingRows[0], classifier, 60..250) ?: return null
+        val diastolic = recognizeRow(mask, readingRows[1], classifier, 40..150) ?: return null
+        val heartRate = recognizeRow(mask, readingRows[2], classifier, 30..200) ?: return null
         if (systolic !in 60..250 || diastolic !in 40..150 || heartRate !in 30..200) return null
+        if (systolic <= diastolic) return null
+        return BloodPressureRecognitionResult(systolic, diastolic, heartRate)
+    }
+
+    private fun recognizeFixedZones(
+        blueMask: BooleanArray,
+        whiteMask: BooleanArray,
+        classifier: RomSunDigitClassifier
+    ): BloodPressureRecognitionResult? {
+        val combinedMask = BooleanArray(blueMask.size) { blueMask[it] || whiteMask[it] }
+        val candidates = listOf(
+            whiteMask to 20,
+            blueMask to 40,
+            combinedMask to 20
+        )
+        val allowedRanges = listOf(60..250, 40..150, 30..200)
+        val values = FIXED_ROW_ZONES.mapIndexed { index, zone ->
+            candidates.asSequence()
+                .mapNotNull { (mask, threshold) ->
+                    detectZoneRow(mask, zone, threshold)?.let { row ->
+                        recognizeRow(mask, row, classifier, allowedRanges[index], 220, 570, false)
+                    }
+                }
+                .firstOrNull()
+        }
+        val systolic = values[0] ?: return null
+        val diastolic = values[1] ?: return null
+        val heartRate = values[2] ?: return null
         if (systolic <= diastolic) return null
         return BloodPressureRecognitionResult(systolic, diastolic, heartRate)
     }
@@ -62,14 +104,17 @@ object BloodPressurePhotoRecognizer {
     private fun recognizeRow(
         mask: BooleanArray,
         rowRange: IntRange,
-        classifier: RomSunDigitClassifier
+        classifier: RomSunDigitClassifier,
+        allowedRange: IntRange,
+        left: Int = (NORMALIZED_WIDTH * 0.34f).toInt(),
+        right: Int = NORMALIZED_WIDTH,
+        requireModelAgreement: Boolean = true
     ): Int? {
         val top = rowRange.first
         val bottom = rowRange.last + 1
-        val left = (NORMALIZED_WIDTH * 0.34f).toInt()
         val rowHeight = bottom - top
-        val counts = IntArray(NORMALIZED_WIDTH - left)
-        for (x in left until NORMALIZED_WIDTH) {
+        val counts = IntArray(right - left)
+        for (x in left until right) {
             var count = 0
             for (y in top until bottom) if (mask[y * NORMALIZED_WIDTH + x]) count++
             counts[x - left] = count
@@ -112,8 +157,20 @@ object BloodPressurePhotoRecognizer {
         if (digitRuns.size !in 2..3) return null
         if (digitRuns.zipWithNext().any { (first, second) -> first.last >= second.first }) return null
 
-        val digits = digitRuns.map { run -> decodeDigit(mask, run, top, bottom, classifier) ?: return null }
-        return digits.joinToString("").toIntOrNull()
+        val candidates = buildList {
+            add(digitRuns)
+            if (digitRuns.size == 3) add(digitRuns.take(2))
+        }
+        return candidates.asSequence()
+            .mapNotNull { runs ->
+                runs.map { run ->
+                    decodeDigit(mask, run, top, bottom, classifier, requireModelAgreement)
+                }
+                    .takeIf { digits -> digits.all { it != null } }
+                    ?.joinToString("")
+                    ?.toIntOrNull()
+            }
+            .firstOrNull { it in allowedRange }
     }
 
     private fun decodeDigit(
@@ -121,7 +178,8 @@ object BloodPressurePhotoRecognizer {
         xRange: IntRange,
         rowTop: Int,
         rowBottom: Int,
-        classifier: RomSunDigitClassifier
+        classifier: RomSunDigitClassifier,
+        requireModelAgreement: Boolean
     ): Int? {
         var top = rowBottom
         var bottom = rowTop
@@ -155,8 +213,9 @@ object BloodPressurePhotoRecognizer {
         for (y in 0 until height) for (x in 0 until width) {
             digitMask[y * width + x] = mask[(top + y) * NORMALIZED_WIDTH + xRange.first + x]
         }
-        val prediction = classifier.classify(digitMask, width, height) ?: return null
-        return ruleDigit.takeIf { shouldAcceptDigit(it, prediction) }
+        val prediction = classifier.classify(digitMask, width, height)
+        if (prediction != null && shouldAcceptDigit(ruleDigit, prediction)) return ruleDigit
+        return ruleDigit.takeIf { !requireModelAgreement }
     }
 
     private fun regionOccupancy(
@@ -200,6 +259,14 @@ object BloodPressurePhotoRecognizer {
         val green = Color.green(pixel)
         val blue = Color.blue(pixel)
         return blue >= 135 && green >= 110 && blue - red >= 22 && green - red >= 4 && blue >= green - 24
+    }
+
+    private fun isNearWhiteDisplayPixel(pixel: Int): Boolean {
+        val red = Color.red(pixel)
+        val green = Color.green(pixel)
+        val blue = Color.blue(pixel)
+        val spread = maxOf(red, green, blue) - minOf(red, green, blue)
+        return red >= 175 && green >= 175 && blue >= 175 && spread <= 65
     }
 
     private fun passesQualityGate(pixels: IntArray): Boolean {
@@ -268,7 +335,36 @@ object BloodPressurePhotoRecognizer {
     }
 }
 
-internal fun detectReadingRows(mask: BooleanArray): List<IntRange>? {
+internal fun detectZoneRow(mask: BooleanArray, zone: IntRange, rowThreshold: Int): IntRange? {
+    if (mask.size != 600 * 770) return null
+    val rowCounts = IntArray(zone.last - zone.first + 1)
+    for (y in zone) {
+        var count = 0
+        for (x in 220 until 570) if (mask[y * 600 + x]) count++
+        rowCounts[y - zone.first] = count
+    }
+    val active = BooleanArray(rowCounts.size) { rowCounts[it] >= rowThreshold }
+    fillSmallGapsForRows(active, 8)
+    val candidates = mutableListOf<IntRange>()
+    var start = -1
+    active.forEachIndexed { index, value ->
+        if (value && start < 0) start = index
+        if (!value && start >= 0) {
+            val height = index - start
+            if (height in 50..220) candidates += (zone.first + start)..(zone.first + index - 1)
+            start = -1
+        }
+    }
+    if (start >= 0) {
+        val height = active.size - start
+        if (height in 50..220) candidates += (zone.first + start)..zone.last
+    }
+    return candidates.maxByOrNull { row ->
+        row.sumOf { rowCounts[it - zone.first] }
+    }
+}
+
+internal fun detectReadingRows(mask: BooleanArray, rowThreshold: Int = 40): List<IntRange>? {
     if (mask.size != 600 * 770) return null
     val width = 600
     val height = 770
@@ -281,7 +377,7 @@ internal fun detectReadingRows(mask: BooleanArray): List<IntRange>? {
         rowCounts[y] = count
     }
 
-    val active = BooleanArray(height) { rowCounts[it] >= 40 }
+    val active = BooleanArray(height) { rowCounts[it] >= rowThreshold }
     fillSmallGapsForRows(active, 10)
     val minimumHeight = (height * 0.065f).toInt()
     val maximumHeight = (height * 0.32f).toInt()
@@ -349,8 +445,9 @@ internal fun decodeSevenSegment(occupancy: List<Float>, widthRatio: Float): Int?
     val ambiguityBand = maxOf(0.025f, threshold * 0.10f)
     if (occupancy.any { abs(it - threshold) < ambiguityBand }) return null
     val observed = occupancy.map { it >= threshold }
-    // This ROMSUN display lights a strong upper-left edge on 7 at close range.
-    if (observed == listOf(true, true, true, false, false, true, false)) return 7
+    // This ROMSUN display can light either left edge of 7 through glare at close range.
+    // The top, both right edges, and the unlit bottom/middle remain stable identifiers.
+    if (observed[0] && observed[1] && observed[2] && !observed[3] && !observed[6]) return 7
     return patterns.indexOfFirst { pattern ->
         pattern.indices.all { index -> pattern[index] == observed[index] }
     }.takeIf { it >= 0 }

@@ -220,6 +220,7 @@ fun MainNavigation(
     var medRefreshTrigger by remember { mutableStateOf(0) }
     var sportsRefreshTrigger by remember { mutableStateOf(0) }
     var bpSavedTrigger by remember { mutableStateOf(0) }
+    var historyRefreshTrigger by remember { mutableStateOf(0) }
     var showFullscreenChart by remember { mutableStateOf(false) }
     var fullscreenChartType by remember { mutableStateOf("bp") }
     var fullscreenRecords by remember { mutableStateOf<List<BloodPressureRecord>>(emptyList()) }
@@ -238,7 +239,7 @@ fun MainNavigation(
 
     // Tab screens and sub-screens
     val tabScreens = listOf("home", "data", "sports")
-    val subScreens = listOf("input_bp", "medication", "history", "settings", "training", "plan_selection", "custom_plan")
+    val subScreens = listOf("input_bp", "photo_bp", "medication", "history", "settings", "training", "plan_selection", "custom_plan")
 
     // Helper to check if current screen is a tab
     val isTabScreen = currentScreen in tabScreens
@@ -280,7 +281,7 @@ fun MainNavigation(
         }
     }
 
-    LaunchedEffect(currentScreen, medRefreshTrigger, bpSavedTrigger) {
+    LaunchedEffect(currentScreen, medRefreshTrigger, bpSavedTrigger, historyRefreshTrigger) {
         when {
             currentScreen == "home" || currentScreen == "medication" -> {
                 todayRecords = db.bloodPressureDao().getByDate(today)
@@ -383,12 +384,14 @@ fun MainNavigation(
         showSaveSuccess = showSaveSuccess,
         onSaveSuccessConsumed = { showSaveSuccess = false },
                 onAddBloodPressure = { currentScreen = "input_bp" },
+                onPhotoBloodPressure = { currentScreen = "photo_bp" },
                 onAddMedication = { currentScreen = "medication" },
                 onNavigateToHistory = { currentScreen = "history" },
                 onNavigateToSettings = { currentScreen = "settings" },
                 onStartTraining = { currentScreen = "training" },
                 onBackToSports = { currentScreen = "sports" },
                 onMedicationChanged = { medRefreshTrigger++ },
+                onHistoryChanged = { historyRefreshTrigger++ },
                 onSportsChanged = { sportsRefreshTrigger++ },
                 onOpenFullscreen = { type, records ->
                     fullscreenChartType = type
@@ -568,12 +571,14 @@ private fun CurrentScreenContent(
     showSaveSuccess: Boolean,
     onSaveSuccessConsumed: () -> Unit,
     onAddBloodPressure: () -> Unit,
+    onPhotoBloodPressure: () -> Unit,
     onAddMedication: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onStartTraining: () -> Unit,
     onBackToSports: () -> Unit,
     onMedicationChanged: () -> Unit,
+    onHistoryChanged: () -> Unit,
     onSportsChanged: () -> Unit,
     onOpenFullscreen: (chartType: String, records: List<BloodPressureRecord>) -> Unit,
     sportsRefreshTrigger: Int,
@@ -597,6 +602,7 @@ private fun CurrentScreenContent(
             showSaveSuccess = showSaveSuccess,
             onSaveSuccessConsumed = onSaveSuccessConsumed,
             onAddBloodPressure = onAddBloodPressure,
+            onPhotoBloodPressure = onPhotoBloodPressure,
             onAddMedication = onAddMedication,
             onNavigateToHistory = onNavigateToHistory,
             onNavigateToSettings = onNavigateToSettings
@@ -714,6 +720,12 @@ private fun CurrentScreenContent(
             onBack = onBack
         )
 
+        "photo_bp" -> BloodPressureInputScreen(
+            onSave = onSaveBloodPressure,
+            onBack = onBack,
+            startWithCamera = true
+        )
+
         "medication" -> MedicationCheckInScreen(
             medications = medications,
             todayRecords = todayMedRecords,
@@ -765,21 +777,25 @@ private fun CurrentScreenContent(
             onDeleteBpRecord = { record ->
                 lifecycleScope.launch { val activity = this
                     db.bloodPressureDao().delete(record)
+                    onHistoryChanged()
                 }
             },
             onUpdateBpRecord = { id, systolic, diastolic, heartRate, date, period ->
                 lifecycleScope.launch { val activity = this
                     db.bloodPressureDao().updateRecord(id, systolic, diastolic, heartRate, date, period)
+                    onHistoryChanged()
                 }
             },
             onDeleteMedRecord = { record ->
                 lifecycleScope.launch { val activity = this
                     db.medicationRecordDao().delete(record)
+                    onHistoryChanged()
                 }
             },
             onUpdateMedRecord = { id, medicationId, date, taken, dosage ->
                 lifecycleScope.launch { val activity = this
                     db.medicationRecordDao().updateMedRecord(id, medicationId, date, taken, dosage)
+                    onHistoryChanged()
                 }
             },
             onBack = onBack

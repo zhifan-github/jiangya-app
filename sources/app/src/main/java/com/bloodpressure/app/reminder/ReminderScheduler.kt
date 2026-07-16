@@ -2,10 +2,9 @@ package com.bloodpressure.app.reminder
 
 import android.app.AlarmManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import com.bloodpressure.app.MainActivity
 import java.util.Calendar
 
 object ReminderScheduler {
@@ -53,29 +52,18 @@ object ReminderScheduler {
             }
         }
 
-        // 使用精确闹钟（Android 12+需要SCHEDULE_EXACT_ALARM权限）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            } else {
-                // 不允许精确闹钟时，使用非精确闹钟
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            }
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                pendingIntent
-            )
-        }
+        val showIntent = PendingIntent.getActivity(
+            context,
+            type.id + 10_000,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // 闹钟级调度不会被 Doze 或厂商的后台限流延后。
+        alarmManager.setAlarmClock(
+            AlarmManager.AlarmClockInfo(calendar.timeInMillis, showIntent),
+            pendingIntent
+        )
     }
 
     fun cancelAll(context: Context) {

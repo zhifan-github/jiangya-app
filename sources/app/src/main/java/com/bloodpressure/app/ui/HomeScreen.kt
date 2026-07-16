@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -67,6 +68,7 @@ fun HomeScreen(
     showSaveSuccess: Boolean = false,
     onSaveSuccessConsumed: () -> Unit = {},
     onAddBloodPressure: () -> Unit,
+    onPhotoBloodPressure: () -> Unit,
     onAddMedication: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToSettings: () -> Unit = {}
@@ -128,10 +130,8 @@ fun HomeScreen(
 
             // ====== 快捷操作 ======
             QuickActionsRow(
-                medications = medications,
-                todayMedRecords = todayMedRecords,
-                onAddBloodPressure = onAddBloodPressure,
-                onAddMedication = onAddMedication
+                onPhotoBloodPressure = onPhotoBloodPressure,
+                onAddBloodPressure = onAddBloodPressure
             )
 
             // ====== 血压趋势柱状图 ======
@@ -286,14 +286,12 @@ private fun MedicationSection(medications: List<Medication>, todayMedRecords: Li
 
 // ====== 快捷操作按钮行 ======
 @Composable
-private fun QuickActionsRow(medications: List<Medication>, todayMedRecords: List<MedicationRecord>, onAddBloodPressure: () -> Unit, onAddMedication: () -> Unit) {
-    val activeMedications = medications.filter { it.isActive }
-    val completedCount = activeMedications.count { med -> todayMedRecords.any { it.medicationId == med.id && it.taken } }
+private fun QuickActionsRow(onPhotoBloodPressure: () -> Unit, onAddBloodPressure: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = HomeCard), border = BorderStroke(1.dp, HomeCardBorder), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            BigActionButton(modifier = Modifier.weight(1f), icon = Icons.Default.Add, title = "记录血压", subtitle = "快速录入", iconBg = MintCircle, iconColor = HeroTeal, onClick = onAddBloodPressure)
+            BigActionButton(modifier = Modifier.weight(1f), icon = Icons.Default.PhotoCamera, title = "拍照打卡", subtitle = "拍照识别", iconBg = MintCircle, iconColor = HeroTeal, onClick = onPhotoBloodPressure)
             Box(modifier = Modifier.width(1.dp).height(58.dp).background(HomeCardBorder))
-            BigActionButton(modifier = Modifier.weight(1f), icon = Icons.Outlined.Description, title = "用药打卡", subtitle = if (activeMedications.isEmpty()) "今日 0/0" else "今日 $completedCount/${activeMedications.size}", iconBg = LeafCircle, iconColor = Color(0xFF5A8B2B), onClick = onAddMedication)
+            BigActionButton(modifier = Modifier.weight(1f), icon = Icons.Default.Add, title = "记录血压", subtitle = "手动录入", iconBg = LeafCircle, iconColor = Color(0xFF5A8B2B), onClick = onAddBloodPressure)
         }
     }
 }

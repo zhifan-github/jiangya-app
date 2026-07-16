@@ -43,6 +43,11 @@ class BloodPressurePhotoRecognizerTest {
     }
 
     @Test
+    fun decodeSevenSegment_handlesRomSunSevenLowerLeftGlare() {
+        assertEquals(7, decodeSevenSegment(listOf(0.95f, 0.77f, 0.63f, 0.02f, 0.69f, 0.74f, 0.08f), 1.04f))
+    }
+
+    @Test
     fun detectReadingRows_ignoresHeaderAndAllowsVerticalOffset() {
         val width = 600
         val height = 770
@@ -65,6 +70,29 @@ class BloodPressurePhotoRecognizerTest {
         }
 
         assertEquals(listOf(126..330, 361..551, 594..713), detectReadingRows(mask))
+    }
+
+    @Test
+    fun detectReadingRows_supportsTwoDigitHeartRateInLowLightMode() {
+        val width = 600
+        val height = 770
+        val mask = BooleanArray(width * height)
+        listOf(170..345, 374..546).forEach { row ->
+            for (y in row) for (x in 260..540) mask[y * width + x] = true
+        }
+        for (y in 586..693) for (x in 390..550) mask[y * width + x] = true
+
+        assertEquals(listOf(170..345, 374..546, 586..693), detectReadingRows(mask, 20))
+    }
+
+    @Test
+    fun detectZoneRow_selectsReadingInsideFixedGuide() {
+        val width = 600
+        val height = 770
+        val mask = BooleanArray(width * height)
+        for (y in 343..510) for (x in 340..555) mask[y * width + x] = true
+
+        assertEquals(343..510, detectZoneRow(mask, 325..535, 20))
     }
 
     @Test

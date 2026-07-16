@@ -166,7 +166,7 @@ fun BloodPressureCameraScreen(
                 }
                 Column {
                     Text("拍摄血压计", color = Color.White, fontSize = 18.sp)
-                    Text("确认屏幕显示数字，再对齐发光显示屏", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                    Text("让发光屏幕填满大框，三行数字完整落入小框", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                 }
             }
         }
@@ -180,13 +180,61 @@ fun BloodPressureCameraScreen(
                     .align(Alignment.Center)
                     .border(3.dp, Color(0xFF5FE1FF), RoundedCornerShape(24.dp))
             ) {
-                Text(
-                    "收缩压\n\n\n舒张压\n\n\n心率",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 13.sp,
+                Box(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 14.dp)
+                        .width(frameWidth * 0.54f)
+                        .height(frameHeight * 0.28f)
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.39f, y = frameHeight * 0.14f)
+                        .border(2.dp, Color(0xFF5FE1FF), RoundedCornerShape(10.dp))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(frameWidth * 0.54f)
+                        .height(frameHeight * 0.23f)
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.39f, y = frameHeight * 0.44f)
+                        .border(2.dp, Color(0xFF5FE1FF), RoundedCornerShape(10.dp))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(frameWidth * 0.54f)
+                        .height(frameHeight * 0.16f)
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.39f, y = frameHeight * 0.68f)
+                        .border(2.dp, Color(0xFF5FE1FF), RoundedCornerShape(10.dp))
+                )
+                Text(
+                    "收缩压",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.06f, y = frameHeight * 0.26f)
+                )
+                Text(
+                    "舒张压",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.06f, y = frameHeight * 0.54f)
+                )
+                Text(
+                    "心率",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = frameWidth * 0.06f, y = frameHeight * 0.73f)
+                )
+                Text(
+                    "数字明显小于框时，请再靠近",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp)
                 )
             }
         }
